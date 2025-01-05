@@ -17,7 +17,7 @@ lga_name_mapping = {
     'kingston': 'kingston city council',
     'latrobe': 'latrobe city council',
     'mildura': 'mildura rural city council',
-    'queenscliff': 'borough of queenscliffe',
+    'queenscliff': 'queenscliffe borough council',
     'swan hill': 'swan hill rural city council',
     'wangaratta': 'wangaratta rural city council'
 }
@@ -30,47 +30,39 @@ lga_data = gpd.read_file(shapefile_path)
 print("Loading CSV...")
 csv_data = pd.read_csv(csv_path)
 
-# Filter Victorian LGAs from the shapefile
+# Normalize LGA names
+def normalize_name(name):
+    if pd.isna(name):
+        return ""
+    return (
+        name.lower()
+        .replace(" city council", "")
+        .replace(" shire council", "")
+        .replace(" borough council", "")
+        .replace(" rural city council", "")
+        .replace("-", " ")
+        .strip()
+    )
+
+# Apply normalization to both shapefile and CSV
+print("Normalizing names...")
+lga_data["LGA_NAME24"] = lga_data["LGA_NAME24"].apply(normalize_name)
+csv_data["LGA_normalized"] = csv_data["LGA"].apply(normalize_name)
+
+# Apply additional mapping for shapefile LGAs
+print("Applying LGA name mapping...")
+lga_data["LGA_NAME24"] = lga_data["LGA_NAME24"].replace(lga_name_mapping)
+
+# Filter Victorian LGAs
 print("Filtering Victorian LGAs...")
-victorian_lgas = [
-    "alpine", "ararat", "ballarat", "banyule", "bass coast", "baw baw", "bayside",
-    "benalla", "boroondara", "brimbank", "buloke", "campaspe", "cardinia", "casey",
-    "central goldfields", "colac otway", "corangamite", "darebin", "east gippsland",
-    "frankston", "gannawarra", "glen eira", "glenelg", "golden plains", "greater bendigo",
-    "greater dandenong", "greater geelong", "greater shepparton", "hepburn", "hindmarsh",
-    "hobsons bay", "horsham", "hume", "indigo", "kingston", "knox", "latrobe", "loddon",
-    "macedon ranges", "manningham", "mansfield", "maribyrnong", "maroondah", "melbourne",
-    "melton", "merri-bek", "mildura", "mitchell", "moira", "monash", "moonee valley",
-    "moorabool", "mornington peninsula", "mount alexander", "moyne", "murrindindi",
-    "nillumbik", "northern grampians", "port phillip", "pyrenees", "queenscliff",
-    "south gippsland", "southern grampians", "stonnington", "strathbogie", "surf coast",
-    "swan hill", "towong", "wangaratta", "warrnambool", "wellington", "west wimmera",
-    "whitehorse", "whittlesea", "wodonga", "wyndham", "yarra", "yarra ranges",
-    "yarriambiack"
-]
-
-# Normalize LGA names in shapefile
-lga_data["LGA_NAME24"] = lga_data["LGA_NAME24"].str.strip().str.lower()
+victorian_lgas = set(csv_data["LGA_normalized"])
 vic_lga_shapefile = lga_data[lga_data["LGA_NAME24"].isin(victorian_lgas)]
-
-# Apply the name mapping to match shapefile LGAs with full names in the CSV
-vic_lga_shapefile["LGA_NAME24"] = vic_lga_shapefile["LGA_NAME24"].replace(lga_name_mapping)
-
-# Normalize LGA names in the CSV
-csv_data["LGA_normalized"] = csv_data["LGA"].str.strip().str.lower()
-csv_data["LGA_normalized"] = (
-    csv_data["LGA_normalized"]
-    .str.replace(" city council", "", regex=False)
-    .str.replace(" rural city council", "", regex=False)
-    .str.replace(" shire council", "", regex=False)
-    .str.replace("borough council", "", regex=False)
-)
 
 # Merge shapefile and CSV
 print("Merging shapefile and CSV...")
 merged_data = vic_lga_shapefile.merge(csv_data, left_on="LGA_NAME24", right_on="LGA_normalized")
 
-# Check for unmatched LGAs
+# Check unmatched LGAs
 unmatched_lgas = set(vic_lga_shapefile["LGA_NAME24"]).difference(set(csv_data["LGA_normalized"]))
 if unmatched_lgas:
     print("\nUnmatched LGAs from the shapefile (not in CSV):")
@@ -81,17 +73,6 @@ if unmatched_lgas:
 # Dissolve by Tourism Region
 print("Dissolving LGAs into Tourism Regions...")
 tourism_regions = merged_data.dissolve(by="Tourism Area")
-
-# Check for empty or invalid geometries
-invalid_geometries = tourism_regions[~tourism_regions.is_valid]
-empty_geometries = tourism_regions[tourism_regions.geometry.is_empty]
-
-if not invalid_geometries.empty:
-    print("\nInvalid geometries found:")
-    print(invalid_geometries)
-if not empty_geometries.empty:
-    print("\nEmpty geometries found:")
-    print(empty_geometries)
 
 # Rename columns for shapefile compatibility
 tourism_regions = tourism_regions.rename(columns={

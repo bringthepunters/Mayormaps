@@ -66,35 +66,21 @@ except Exception as e:
     print(f"Error dissolving data: {e}")
     exit(1)
 
-# Debugging: Log geometries at each step
-print("\nBefore Filtering:")
-print(f"Total geometries: {len(tourism_regions)}")
-
 # Log invalid geometries
 invalid_geometries = tourism_regions[~tourism_regions.is_valid]
 if not invalid_geometries.empty:
-    print("\nInvalid geometries found:")
+    print("\nWarning: Invalid geometries found:")
     print(invalid_geometries)
-else:
-    print("No invalid geometries found.")
-
 # Remove invalid geometries
 tourism_regions = tourism_regions[tourism_regions.is_valid]
-print("\nAfter Validity Check:")
-print(f"Valid geometries: {len(tourism_regions)}")
 
 # Ensure non-empty geometries
 empty_geometries = tourism_regions[tourism_regions.geometry.is_empty]
 if not empty_geometries.empty:
-    print("\nEmpty geometries found:")
+    print("\nWarning: Empty geometries found:")
     print(empty_geometries)
-else:
-    print("No empty geometries found.")
-
 # Drop empty geometries
 tourism_regions = tourism_regions[~tourism_regions.geometry.is_empty]
-print("\nAfter Empty Geometry Check:")
-print(f"Non-empty geometries: {len(tourism_regions)}")
 
 # Log geometries before saving
 print("\nBefore Saving Shapefile:")
@@ -134,5 +120,3 @@ try:
     print("Saved static map as 'tourism_regions_map.png'.")
 except Exception as e:
     print(f"Error creating static map: {e}")
-
-

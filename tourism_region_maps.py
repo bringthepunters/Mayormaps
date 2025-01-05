@@ -4,39 +4,135 @@ import folium
 import matplotlib.pyplot as plt
 
 # File paths
-shapefile_path = "LGA_2024_AUST_GDA2020.shp"  # Update this path
-csv_path = "LGA&TOURISM_REGIONS.csv"
+shapefile_path = "LGA_2024_AUST_GDA2020.shp"  # Update this path if needed
+csv_path = "LGA&TOURISM_REGIONS.csv"  # Correct path to your CSV file
 
 # Load LGA shapefile
-lga_data = gpd.read_file(shapefile_path)
+try:
+    lga_data = gpd.read_file(shapefile_path)
+    print("Loaded LGA shapefile successfully.")
+    print(f"LGA CRS: {lga_data.crs}")
+except Exception as e:
+    print(f"Error loading LGA shapefile: {e}")
+    exit(1)
+
+# Align CRS to EPSG:4326
+try:
+    lga_data = lga_data.to_crs("EPSG:4326")
+    print(f"LGA CRS after transformation: {lga_data.crs}")
+except Exception as e:
+    print(f"Error aligning LGA CRS: {e}")
+    exit(1)
 
 # Load Tourism Region data
-tourism_data = pd.read_csv(csv_path)
+try:
+    tourism_data = pd.read_csv(csv_path)
+    print("Loaded Tourism Region CSV successfully.")
+    print(f"Tourism Region columns: {tourism_data.columns}")
+except Exception as e:
+    print(f"Error loading CSV file: {e}")
+    exit(1)
 
 # Merge shapefile and CSV on LGA name
-merged_data = lga_data.merge(tourism_data, left_on="LGA_NAME24", right_on="LGA")
+try:
+    merged_data = lga_data.merge(tourism_data, left_on="LGA_NAME24", right_on="LGA")
+    print("Merged shapefile and CSV successfully.")
+    print(f"Merged data rows: {len(merged_data)}")
+    
+    # Debug unique Tourism Areas
+    print("\nUnique Tourism Areas in merged data:")
+    print(merged_data["Tourism Area"].unique())
+
+    # Check for null values
+    print("\nNull values in 'Tourism Area':")
+    print(merged_data["Tourism Area"].isnull().sum())
+except KeyError as e:
+    print(f"Error merging dataframes: {e}")
+    print("Check that the LGA names in both files match.")
+    exit(1)
+except Exception as e:
+    print(f"An unexpected error occurred during merging: {e}")
+    exit(1)
+
+# Filter out rows with null Tourism Areas
+merged_data = merged_data[~merged_data["Tourism Area"].isnull()]
 
 # Dissolve by Tourism Region
-tourism_regions = merged_data.dissolve(by="Tourism Area")
+try:
+    tourism_regions = merged_data.dissolve(by="Tourism Area")
+    print("Dissolved LGAs into Tourism Regions successfully.")
+    print(f"Tourism Regions rows: {len(tourism_regions)}")
+except Exception as e:
+    print(f"Error dissolving data: {e}")
+    exit(1)
+
+# Debugging: Log geometries at each step
+print("\nBefore Filtering:")
+print(f"Total geometries: {len(tourism_regions)}")
+
+# Log invalid geometries
+invalid_geometries = tourism_regions[~tourism_regions.is_valid]
+if not invalid_geometries.empty:
+    print("\nInvalid geometries found:")
+    print(invalid_geometries)
+else:
+    print("No invalid geometries found.")
+
+# Remove invalid geometries
+tourism_regions = tourism_regions[tourism_regions.is_valid]
+print("\nAfter Validity Check:")
+print(f"Valid geometries: {len(tourism_regions)}")
+
+# Ensure non-empty geometries
+empty_geometries = tourism_regions[tourism_regions.geometry.is_empty]
+if not empty_geometries.empty:
+    print("\nEmpty geometries found:")
+    print(empty_geometries)
+else:
+    print("No empty geometries found.")
+
+# Drop empty geometries
+tourism_regions = tourism_regions[~tourism_regions.geometry.is_empty]
+print("\nAfter Empty Geometry Check:")
+print(f"Non-empty geometries: {len(tourism_regions)}")
+
+# Log geometries before saving
+print("\nBefore Saving Shapefile:")
+print(f"Total geometries remaining: {len(tourism_regions)}")
+
+# Shorten column names to avoid ESRI Shapefile truncation
+tourism_regions = tourism_regions.rename(columns={"Tourism Area": "TourismAr"})
 
 # Save the dissolved shapefile for future use
-tourism_regions.to_file("tourism_regions.shp")
+try:
+    tourism_regions.to_file("tourism_regions.shp")
+    print("Saved shapefile as 'tourism_regions.shp'.")
+except Exception as e:
+    print(f"Error saving shapefile: {e}")
 
-# Ensure geometries are valid and non-empty
-tourism_regions = tourism_regions[tourism_regions.is_valid]
-tourism_regions = tourism_regions[tourism_regions.geometry.notnull()]
+# Check if valid data exists before creating maps
+if tourism_regions.empty:
+    print("No valid geometries remain after processing. Exiting.")
+    exit(1)
 
 # Create an interactive map with Folium
-tourism_map = folium.Map(location=[-37, 144], zoom_start=7)  # Adjust as needed
-folium.GeoJson(tourism_regions.to_crs("EPSG:4326")).add_to(tourism_map)
-
-# Save interactive map as HTML
-tourism_map.save("tourism_regions_map.html")
+try:
+    tourism_map = folium.Map(location=[-37, 144], zoom_start=7)  # Adjust as needed
+    folium.GeoJson(tourism_regions).add_to(tourism_map)
+    tourism_map.save("tourism_regions_map.html")
+    print("Saved interactive map as 'tourism_regions_map.html'.")
+except Exception as e:
+    print(f"Error creating interactive map: {e}")
 
 # Plot static map for printing
-tourism_regions.plot(cmap="tab20", figsize=(10, 10))
-plt.title("Tourism Regions in Victoria")
-plt.savefig("tourism_regions_map.png", dpi=300)  # Save as high-res image
-plt.show()
+try:
+    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+    tourism_regions.plot(cmap="tab20", ax=ax)
+    ax.set_title("Tourism Regions in Victoria", fontsize=16)
+    plt.savefig("tourism_regions_map.png", dpi=300)  # Save as high-res image
+    plt.show()
+    print("Saved static map as 'tourism_regions_map.png'.")
+except Exception as e:
+    print(f"Error creating static map: {e}")
 
-print("Tourism Region maps have been created!")
+

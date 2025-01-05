@@ -13,3 +13,4 @@ print(lga_data.columns)
 # Display the first few rows of data to understand its structure
 print("\nFirst Few Rows of the Shapefile:")
 print(lga_data.head())
+

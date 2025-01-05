@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 # File paths
 shapefile_path = "LGA_2024_AUST_GDA2020.shp"  # Update this path
-csv_path = "your_csv_file.csv"  # Update this path
+csv_path = "LGA&TOURISM_REGIONS.csv"
 
 # Load LGA shapefile
 lga_data = gpd.read_file(shapefile_path)
@@ -21,6 +21,10 @@ tourism_regions = merged_data.dissolve(by="Tourism Area")
 
 # Save the dissolved shapefile for future use
 tourism_regions.to_file("tourism_regions.shp")
+
+# Ensure geometries are valid and non-empty
+tourism_regions = tourism_regions[tourism_regions.is_valid]
+tourism_regions = tourism_regions[tourism_regions.geometry.notnull()]
 
 # Create an interactive map with Folium
 tourism_map = folium.Map(location=[-37, 144], zoom_start=7)  # Adjust as needed

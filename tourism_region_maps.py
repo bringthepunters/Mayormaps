@@ -42,13 +42,15 @@ pd.DataFrame(lga_data["LGA_NAME24"].unique(), columns=["Shapefile LGA"]).to_csv(
 pd.DataFrame(tourism_data["LGA"].unique(), columns=["CSV LGA"]).to_csv("csv_lga_names.csv", index=False)
 print("\nSaved unique LGA names to 'shapefile_lga_names.csv' and 'csv_lga_names.csv' for manual inspection.")
 
-# Check for unmatched LGAs
-unmatched_lgas = set(lga_data["LGA_NAME24"]).difference(set(tourism_data["LGA"]))
-if unmatched_lgas:
-    print("\nUnmatched LGAs found in shapefile (not in CSV):")
-    print(unmatched_lgas)
-    pd.DataFrame(list(unmatched_lgas), columns=["Unmatched LGAs"]).to_csv("unmatched_lgas.csv", index=False)
-    print("Saved unmatched LGAs to 'unmatched_lgas.csv'.")
+# Check for unmatched LGAs in the CSV file
+unmatched_lgas_csv = set(tourism_data["LGA"]).difference(set(lga_data["LGA_NAME24"]))
+if unmatched_lgas_csv:
+    print("\nUnmatched LGAs found in CSV (not in shapefile):")
+    print(unmatched_lgas_csv)
+    pd.DataFrame(list(unmatched_lgas_csv), columns=["Unmatched LGAs"]).to_csv("unmatched_lgas_from_csv.csv", index=False)
+    print("Saved unmatched LGAs to 'unmatched_lgas_from_csv.csv'.")
+else:
+    print("\nNo unmatched LGAs found in CSV.")
 
 # Merge shapefile and CSV on LGA name
 try:

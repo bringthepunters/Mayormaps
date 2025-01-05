@@ -7,115 +7,154 @@ import matplotlib.pyplot as plt
 shapefile_path = "LGA_2024_AUST_GDA2020.shp"  # Path to the shapefile
 csv_path = "LGA&TOURISM_REGIONS.csv"  # Path to the CSV file
 
-# LGA name mapping to handle discrepancies
-lga_name_mapping = {
-    'ararat': 'ararat rural city council',
-    'bayside': 'bayside city council',
-    'benalla': 'benalla rural city council',
-    'colac otway': 'colac otway shire council',
-    'horsham': 'horsham rural city council',
-    'kingston': 'kingston city council',
-    'latrobe': 'latrobe city council',
-    'mildura': 'mildura rural city council',
-    'queenscliff': 'queenscliffe borough council',
-    'swan hill': 'swan hill rural city council',
-    'wangaratta': 'wangaratta rural city council'
-}
+# Load LGA shapefile
+try:
+    lga_data = gpd.read_file(shapefile_path)
+    print("Loaded LGA shapefile successfully.")
+    print(f"LGA CRS: {lga_data.crs}")
+except Exception as e:
+    print(f"Error loading LGA shapefile: {e}")
+    exit(1)
 
-# Load the shapefile
-print("Loading shapefile...")
-lga_data = gpd.read_file(shapefile_path)
+# Align CRS to EPSG:4326
+try:
+    lga_data = lga_data.to_crs("EPSG:4326")
+    print(f"LGA CRS after transformation: {lga_data.crs}")
+except Exception as e:
+    print(f"Error aligning LGA CRS: {e}")
+    exit(1)
 
-# Load the CSV
-print("Loading CSV...")
-csv_data = pd.read_csv(csv_path)
+# Load Tourism Region data
+try:
+    tourism_data = pd.read_csv(csv_path)
+    print("Loaded Tourism Region CSV successfully.")
+    print(f"Tourism Region columns: {tourism_data.columns}")
+except Exception as e:
+    print(f"Error loading CSV file: {e}")
+    exit(1)
 
-# Normalize LGA names
+# Normalize LGA names in both datasets
 def normalize_name(name):
-    if pd.isna(name):
+    if pd.isna(name):  # Handle missing values
         return ""
     return (
         name.lower()
         .replace(" city council", "")
-        .replace(" shire council", "")
-        .replace(" borough council", "")
         .replace(" rural city council", "")
+        .replace(" shire council", "")
+        .replace("borough council", "")
         .replace("-", " ")
         .strip()
     )
 
-# Apply normalization to both shapefile and CSV
-print("Normalizing names...")
 lga_data["LGA_NAME24"] = lga_data["LGA_NAME24"].apply(normalize_name)
-csv_data["LGA_normalized"] = csv_data["LGA"].apply(normalize_name)
+tourism_data["LGA"] = tourism_data["LGA"].apply(normalize_name)
 
-# Apply additional mapping for shapefile LGAs
-print("Applying LGA name mapping...")
-lga_data["LGA_NAME24"] = lga_data["LGA_NAME24"].replace(lga_name_mapping)
+# Save unique LGA names for debugging
+pd.DataFrame(lga_data["LGA_NAME24"].unique(), columns=["Shapefile LGA"]).to_csv("shapefile_lga_names.csv", index=False)
+pd.DataFrame(tourism_data["LGA"].unique(), columns=["CSV LGA"]).to_csv("csv_lga_names.csv", index=False)
+print("\nSaved unique LGA names to 'shapefile_lga_names.csv' and 'csv_lga_names.csv' for manual inspection.")
 
-# Filter Victorian LGAs
-print("Filtering Victorian LGAs...")
-victorian_lgas = set(csv_data["LGA_normalized"])
-vic_lga_shapefile = lga_data[lga_data["LGA_NAME24"].isin(victorian_lgas)]
+# Check for unmatched LGAs in the CSV file
+unmatched_lgas_csv = set(tourism_data["LGA"]).difference(set(lga_data["LGA_NAME24"]))
+if unmatched_lgas_csv:
+    print("\nUnmatched LGAs found in CSV (not in shapefile):")
+    print(unmatched_lgas_csv)
+    pd.DataFrame(list(unmatched_lgas_csv), columns=["Unmatched LGAs"]).to_csv("unmatched_lgas_from_csv.csv", index=False)
+    print("Saved unmatched LGAs to 'unmatched_lgas_from_csv.csv'.")
+else:
+    print("\nNo unmatched LGAs found in CSV.")
 
-# Merge shapefile and CSV
-print("Merging shapefile and CSV...")
-merged_data = vic_lga_shapefile.merge(csv_data, left_on="LGA_NAME24", right_on="LGA_normalized")
+# Merge shapefile and CSV on normalized LGA names
+try:
+    merged_data = lga_data.merge(tourism_data, left_on="LGA_NAME24", right_on="LGA")
+    print("Merged shapefile and CSV successfully.")
+    print(f"Merged data rows: {len(merged_data)}")
+except KeyError as e:
+    print(f"Error merging dataframes: {e}")
+    print("Check that the LGA names in both files match.")
+    exit(1)
+except Exception as e:
+    print(f"An unexpected error occurred during merging: {e}")
+    exit(1)
 
-# Check unmatched LGAs
-unmatched_lgas = set(vic_lga_shapefile["LGA_NAME24"]).difference(set(csv_data["LGA_normalized"]))
-if unmatched_lgas:
-    print("\nUnmatched LGAs from the shapefile (not in CSV):")
-    print(unmatched_lgas)
-    pd.DataFrame(list(unmatched_lgas), columns=["Unmatched LGAs"]).to_csv("unmatched_lgas.csv", index=False)
-    print("Saved unmatched LGAs to 'unmatched_lgas.csv'.")
+# Filter out rows with null Tourism Areas
+merged_data = merged_data[~merged_data["Tourism Area"].isnull()]
 
 # Dissolve by Tourism Region
-print("Dissolving LGAs into Tourism Regions...")
-tourism_regions = merged_data.dissolve(by="Tourism Area")
+try:
+    tourism_regions = merged_data.dissolve(by="Tourism Area")
+    print("Dissolved LGAs into Tourism Regions successfully.")
+    print(f"Tourism Regions rows: {len(tourism_regions)}")
+except Exception as e:
+    print(f"Error dissolving data: {e}")
+    exit(1)
 
-# Rename columns for shapefile compatibility
-tourism_regions = tourism_regions.rename(columns={
-    "Tourism Area": "TourismAr",
-    "LGA_normalized": "LGA_norm"
-})
+# Debugging: Log geometries at each step
+print("\nBefore Filtering:")
+print(f"Total geometries: {len(tourism_regions)}")
 
-# Save the dissolved shapefile
-print("Saving dissolved shapefile...")
-tourism_regions.to_file("tourism_regions.shp")
+# Log invalid geometries
+invalid_geometries = tourism_regions[~tourism_regions.is_valid]
+if not invalid_geometries.empty:
+    print("\nInvalid geometries found:")
+    print(invalid_geometries)
+else:
+    print("No invalid geometries found.")
 
-# Save as GeoJSON for interactive mapping
-tourism_regions.to_file("tourism_regions.geojson", driver="GeoJSON")
+# Remove invalid geometries
+tourism_regions = tourism_regions[tourism_regions.is_valid]
+print("\nAfter Validity Check:")
+print(f"Valid geometries: {len(tourism_regions)}")
+
+# Ensure non-empty geometries
+empty_geometries = tourism_regions[tourism_regions.geometry.is_empty]
+if not empty_geometries.empty:
+    print("\nEmpty geometries found:")
+    print(empty_geometries)
+else:
+    print("No empty geometries found.")
+
+# Drop empty geometries
+tourism_regions = tourism_regions[~tourism_regions.geometry.is_empty]
+print("\nAfter Empty Geometry Check:")
+print(f"Non-empty geometries: {len(tourism_regions)}")
+
+# Log geometries before saving
+print("\nBefore Saving Shapefile:")
+print(f"Total geometries remaining: {len(tourism_regions)}")
+
+# Shorten column names to avoid ESRI Shapefile truncation
+tourism_regions = tourism_regions.rename(columns={"Tourism Area": "TourismAr"})
+
+# Save the dissolved shapefile for future use
+try:
+    tourism_regions.to_file("tourism_regions.shp")
+    print("Saved shapefile as 'tourism_regions.shp'.")
+except Exception as e:
+    print(f"Error saving shapefile: {e}")
+
+# Check if valid data exists before creating maps
+if tourism_regions.empty:
+    print("No valid geometries remain after processing. Exiting.")
+    exit(1)
 
 # Create an interactive map with Folium
-print("Creating interactive map...")
-tourism_map = folium.Map(location=[-37, 144], zoom_start=7)
-for _, row in tourism_regions.iterrows():
-    folium.GeoJson(
-        row["geometry"],
-        name=row.name,
-        tooltip=folium.Tooltip(row.name)
-    ).add_to(tourism_map)
-tourism_map.save("tourism_regions_map.html")
+try:
+    tourism_map = folium.Map(location=[-37, 144], zoom_start=7)  # Adjust as needed
+    folium.GeoJson(tourism_regions).add_to(tourism_map)
+    tourism_map.save("tourism_regions_map.html")
+    print("Saved interactive map as 'tourism_regions_map.html'.")
+except Exception as e:
+    print(f"Error creating interactive map: {e}")
 
-# Static map with annotations
-print("Creating static map...")
-fig, ax = plt.subplots(1, 1, figsize=(12, 12))
-tourism_regions.plot(cmap="tab20", ax=ax, legend=True)
-for idx, row in tourism_regions.iterrows():
-    if row.geometry.centroid.is_empty:
-        continue
-    plt.annotate(
-        text=row.name,
-        xy=(row.geometry.centroid.x, row.geometry.centroid.y),
-        xytext=(0, 0),
-        textcoords="offset points",
-        horizontalalignment='center',
-        fontsize=8,
-        color="black"
-    )
-ax.set_title("Tourism Regions in Victoria", fontsize=16)
-plt.savefig("tourism_regions_map_with_labels.png", dpi=300)
-plt.show()
-
-print("All files and maps with region names created successfully!")
+# Plot static map for printing
+try:
+    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+    tourism_regions.plot(cmap="tab20", ax=ax)
+    ax.set_title("Tourism Regions in Victoria", fontsize=16)
+    plt.savefig("tourism_regions_map.png", dpi=300)  # Save as high-res image
+    plt.show()
+    print("Saved static map as 'tourism_regions_map.png'.")
+except Exception as e:
+    print(f"Error creating static map: {e}")

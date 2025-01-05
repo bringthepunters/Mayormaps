@@ -22,7 +22,7 @@ cabonne
 camden
 campbelltown (nsw)
 canada bay
-canterbury-bankstown
+canterbury bankstown
 carrathool
 central coast (nsw)
 central darling
@@ -32,7 +32,7 @@ cobar
 coffs harbour
 coolamon
 coonamble
-cootamundra-gundagai
+cootamundra gundagai
 cowra
 cumberland
 dubbo
@@ -60,7 +60,7 @@ inverell
 junee
 kempsey
 kiama
-ku-ring-gai
+ku ring gai
 kyogle
 lachlan
 lake macquarie
@@ -72,8 +72,8 @@ liverpool
 liverpool plains
 lockhart
 maitland
-mid-coast
-mid-western
+mid coast
+mid western
 moree plains
 mosman
 murray river
@@ -91,9 +91,9 @@ orange
 parkes
 parramatta
 penrith
-port macquarie-hastings
+port macquarie hastings
 port stephens
-queanbeyan-palerang
+queanbeyan palerang
 randwick
 richmond valley
 ryde
@@ -129,7 +129,7 @@ woollahra
 yass valley
 unincorporated nsw
 no usual address (nsw)
-migratory - offshore - shipping (nsw)
+migratory   offshore   shipping (nsw)
 alpine
 ararat
 ballarat
@@ -164,9 +164,9 @@ hobsons bay
 horsham
 hume
 indigo
-kingston 
+kingston (vic.)
 knox
-latrobe
+latrobe (vic.)
 loddon
 macedon ranges
 manningham
@@ -175,7 +175,7 @@ maribyrnong
 maroondah
 melbourne
 melton
-merri-bek
+merri bek
 mildura
 mitchell
 moira
@@ -209,6 +209,9 @@ wyndham
 yarra
 yarra ranges
 yarriambiack
+unincorporated vic
+no usual address (vic.)
+migratory   offshore   shipping (vic.)
 aurukun
 balonne
 banana
@@ -288,7 +291,7 @@ woorabinda
 wujal wujal
 yarrabah
 no usual address (qld)
-migratory - offshore - shipping (qld)
+migratory   offshore   shipping (qld)
 adelaide
 adelaide hills
 adelaide plains
@@ -361,7 +364,7 @@ yankalilla
 yorke peninsula
 unincorporated sa
 no usual address (sa)
-migratory - offshore - shipping (sa)
+migratory   offshore   shipping (sa)
 albany
 armadale
 ashburton
@@ -372,10 +375,10 @@ belmont
 beverley
 boddington
 boyup brook
-bridgetown-greenbushes
+bridgetown greenbushes
 brookton
 broome
-broomehill-tambellup
+broomehill tambellup
 bruce rock
 bunbury
 busselton
@@ -403,8 +406,8 @@ dalwallinu
 dandaragan
 dardanup
 denmark
-derby-west kimberley
-donnybrook-balingup
+derby west kimberley
+donnybrook balingup
 dowerin
 dumbleyung
 dundas
@@ -424,7 +427,7 @@ irwin
 jerramungup
 joondalup
 kalamunda
-kalgoorlie-boulder
+kalgoorlie boulder
 karratha
 katanning
 kellerberrin
@@ -471,7 +474,7 @@ quairading
 ravensthorpe
 rockingham
 sandstone
-serpentine-jarrahdale
+serpentine jarrahdale
 shark bay
 south perth
 stirling
@@ -494,15 +497,15 @@ westonia
 wickepin
 williams
 wiluna
-wongan-ballidu
+wongan ballidu
 woodanilling
 wyalkatchem
-wyndham-east kimberley
+wyndham east kimberley
 yalgoo
 yilgarn
 york
 no usual address (wa)
-migratory - offshore - shipping (wa)
+migratory   offshore   shipping (wa)
 break o'day
 brighton
 burnie
@@ -515,7 +518,7 @@ devonport
 dorset
 flinders (tas.)
 george town
-glamorgan-spring bay
+glamorgan spring bay
 glenorchy
 hobart
 huon valley
@@ -529,11 +532,11 @@ northern midlands
 sorell
 southern midlands
 tasman
-waratah-wynyard
+waratah wynyard
 west coast
 west tamar
 no usual address (tas.)
-migratory - offshore - shipping (tas.)
+migratory   offshore   shipping (tas.)
 alice springs
 barkly
 belyuen
@@ -554,11 +557,11 @@ west arnhem
 west daly
 unincorporated nt
 no usual address (nt)
-migratory - offshore - shipping (nt)
+migratory   offshore   shipping (nt)
 unincorporated act
 no usual address (act)
-migratory - offshore - shipping (act)
+migratory   offshore   shipping (act)
 unincorp. other territories
 no usual address (ot)
-migratory - offshore - shipping (ot)
+migratory   offshore   shipping (ot)
 outside australia
